@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Admin Dashboard · Techtonics Club ID Cards</title>
+  <link rel="icon" href="assets/techtonics-logo.jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="inner">
+      <img class="brand-logo" src="assets/techtonics-logo.jpeg" alt="Techtonics Club logo" />
+      <div class="brand-text">
+        <h1>ID Card Admin</h1>
+        <p>Techtonics Club · Iqra University</p>
+      </div>
+      <div class="header-actions" id="headerActions" hidden>
+        <span class="header-user" id="adminEmail"></span>
+        <button class="btn btn-sm" id="logoutBtn" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Boot / session check -->
+  <div id="bootView" class="login-wrap">
+    <div class="table-state"><div class="spinner"></div>Checking session…</div>
+  </div>
+
+  <!-- Login gate -->
+  <div id="loginView" class="login-wrap" hidden>
+    <section class="panel login-card" aria-labelledby="loginTitle">
+      <img class="brand-logo" src="assets/techtonics-logo.jpeg" alt="" />
+      <h2 id="loginTitle">Admin sign in</h2>
+      <p class="panel-sub">Only the club admin can view and export ID cards.</p>
+      <div id="loginConfigWarning" class="alert alert-info config-warning" hidden>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        <div><strong>Setup required</strong>Add your Supabase URL and anon key to <code>config.js</code>.</div>
+      </div>
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input class="input" id="loginEmail" type="email" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input class="input" id="loginPassword" type="password" autocomplete="current-password" required />
+        </div>
+        <div id="loginError" class="alert alert-error" role="alert" hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          <div data-msg></div>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" id="loginBtn" type="submit"><span>Sign in</span></button>
+      </form>
+    </section>
+  </div>
+
+  <!-- Dashboard -->
+  <main id="dashView" class="page" hidden>
+    <div class="dash-head">
+      <div>
+        <h2>Submissions</h2>
+        <p>Review, correct and export member ID cards.</p>
+      </div>
+      <div class="bulk-actions">
+        <button class="btn" id="refreshBtn" type="button" title="Reload submissions">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>
+          <span>Refresh</span>
+        </button>
+        <button class="btn" id="csvBtn" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>
+          <span>Export data as CSV</span>
+        </button>
+        <button class="btn btn-primary" id="zipBtn" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          <span>Download all cards as ZIP</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <label for="searchInput" class="sr-only">Search submissions</label>
+        <input class="input" id="searchInput" type="search" placeholder="Search name, department, batch…" />
+      </div>
+      <label for="filterDesignation" class="sr-only">Filter by Designation</label>
+      <select class="select" id="filterDesignation">
+        <option value="">All Designations</option>
+      </select>
+      <span class="count" id="countLabel"></span>
+    </div>
+
+    <div id="progress" class="progress" hidden>
+      <span class="spinner" aria-hidden="true"></span>
+      <span id="progressText">Preparing…</span>
+      <div class="progress-bar"><span id="progressFill"></span></div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Photo</th>
+            <th scope="col">Name</th>
+            <th scope="col">Department</th>
+            <th scope="col">Batch</th>
+            <th scope="col">Designation</th>
+            <th scope="col">Date</th>
+            <th scope="col" style="text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="tableState" class="table-state" hidden></div>
+    </div>
+  </main>
+
+  <!-- Preview modal -->
+  <div id="previewModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle" hidden>
+    <div class="modal-dialog preview">
+      <div class="modal-head">
+        <h3 id="previewModalTitle">Card preview</h3>
+        <button class="modal-close" type="button" data-close aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body"><div id="previewStage"></div></div>
+      <div class="modal-foot">
+        <button class="btn" type="button" data-close>Close</button>
+        <button class="btn btn-primary" type="button" id="previewDownloadBtn">Download PNG</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit modal -->
+  <div id="editModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle" hidden>
+    <form class="modal-dialog" id="editForm" novalidate>
+      <div class="modal-head">
+        <h3 id="editModalTitle">Edit submission</h3>
+        <button class="modal-close" type="button" data-close aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label for="editName">Full Name</label>
+            <input class="input" id="editName" type="text" maxlength="60" required />
+          </div>
+          <div class="field">
+            <label for="editDepartment">Department</label>
+            <input class="input" id="editDepartment" type="text" maxlength="60" required />
+          </div>
+          <div class="field">
+            <label for="editBatch">Batch</label>
+            <input class="input" id="editBatch" type="text" maxlength="30" required />
+          </div>
+          <div class="field full">
+            <label for="editDesignation">Designation</label>
+            <select class="select" id="editDesignation" required></select>
+            <input class="input custom-designation" id="editCustomDesignation" type="text" maxlength="40" placeholder="Type the Designation" hidden />
+          </div>
+        </div>
+        <div id="editError" class="alert alert-error" role="alert" style="margin-top:14px" hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          <div data-msg></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" type="button" data-close>Cancel</button>
+        <button class="btn btn-primary" type="submit" id="editSaveBtn"><span>Save changes</span></button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Delete confirm modal -->
+  <div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" hidden>
+    <div class="modal-dialog narrow">
+      <div class="modal-head">
+        <h3 id="deleteModalTitle">Delete submission?</h3>
+        <button class="modal-close" type="button" data-close aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="margin:0">This permanently deletes <strong id="deleteName"></strong> and their photo. This cannot be undone.</p>
+        <div id="deleteError" class="alert alert-error" role="alert" style="margin-top:14px" hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          <div data-msg></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" type="button" data-close>Cancel</button>
+        <button class="btn btn-danger" type="button" id="deleteConfirmBtn"><span>Delete</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden host used to render cards for export (same component as preview) -->
+  <div id="exportHost" class="export-host" aria-hidden="true"></div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

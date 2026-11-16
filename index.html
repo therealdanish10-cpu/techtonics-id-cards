@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Member ID Card Registration · Techtonics Club</title>
+  <meta name="description" content="Techtonics Club, Iqra University – submit your details for your member ID card." />
+  <link rel="icon" href="assets/techtonics-logo.jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="inner">
+      <img class="brand-logo" src="assets/techtonics-logo.jpeg" alt="Techtonics Club logo" />
+      <div class="brand-text">
+        <h1>Member ID Card Registration</h1>
+        <p>Techtonics Club · Iqra University</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div id="configWarning" class="alert alert-info config-warning" role="status" hidden>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <div><strong>Setup required</strong>Add your Supabase URL and anon key to <code>config.js</code> to enable submissions.</div>
+    </div>
+
+    <div class="layout">
+      <!-- Form (left on desktop, below on mobile) -->
+      <section class="panel" aria-labelledby="formTitle">
+        <div id="successPanel" class="success-panel" role="status" aria-live="polite" hidden>
+          <div class="check">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <h2>Your details have been submitted</h2>
+          <p id="successName"></p>
+          <p>The club will review your submission and issue your ID card. No further action is needed.</p>
+        </div>
+
+        <h2 id="formTitle" class="panel-title">Your details</h2>
+        <p class="panel-sub">Everything you type updates the card preview instantly.</p>
+
+        <form id="memberForm" novalidate>
+          <fieldset id="formFields">
+            <legend class="sr-only">Member details</legend>
+            <div class="form-grid">
+              <div class="field full">
+                <label for="fullName">Full Name</label>
+                <input class="input" id="fullName" name="full_name" type="text" maxlength="60" autocomplete="name" placeholder="e.g. Muhammad Ali Khan" required />
+                <span class="field-error" id="fullNameError" role="alert"></span>
+              </div>
+
+              <div class="field">
+                <label for="department">Department</label>
+                <input class="input" id="department" name="department" type="text" maxlength="60" placeholder="e.g. Computer Science" required />
+                <span class="field-error" id="departmentError" role="alert"></span>
+              </div>
+
+              <div class="field">
+                <label for="batch">Batch</label>
+                <input class="input" id="batch" name="batch" type="text" maxlength="30" placeholder="e.g. Fall 2023" required />
+                <span class="field-error" id="batchError" role="alert"></span>
+              </div>
+
+              <div class="field full">
+                <label for="designation">Designation</label>
+                <select class="select" id="designation" name="designation" required>
+                  <option value="" disabled selected>Select your Designation</option>
+                </select>
+                <span class="field-error" id="designationError" role="alert"></span>
+                <div id="customDesignationWrap" class="custom-designation" hidden>
+                  <label for="customDesignation" class="sr-only">Custom Designation</label>
+                  <input class="input" id="customDesignation" type="text" maxlength="40" placeholder="Type your Designation" />
+                  <span class="field-error" id="customDesignationError" role="alert"></span>
+                </div>
+              </div>
+
+              <div class="field full">
+                <span class="label" id="photoLabel">Photo</span>
+                <div class="upload" id="uploadZone">
+                  <div class="upload-thumb" id="uploadThumb">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  </div>
+                  <div class="upload-text">
+                    <strong>Upload a clear, front-facing photo</strong>
+                    <span id="uploadName">JPG, PNG or WebP · max 3 MB</span>
+                  </div>
+                  <input id="photo" name="photo" type="file" accept="image/*" aria-labelledby="photoLabel" required />
+                </div>
+                <span class="field-error" id="photoError" role="alert"></span>
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="form-footer">
+            <div id="formAlert" class="alert alert-error" role="alert" hidden>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+              <div><strong>Submission failed</strong><span data-msg></span></div>
+            </div>
+
+            <button id="submitBtn" class="btn btn-primary btn-lg btn-block" type="submit"><span>Submit</span></button>
+
+            <p class="review-note">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Please submit only once. All submissions are reviewed by the club before ID cards are issued; duplicate or fake entries will be removed.</span>
+            </p>
+          </div>
+        </form>
+      </section>
+
+      <!-- Live preview (right on desktop, on top on mobile) -->
+      <aside class="panel preview-panel" aria-labelledby="previewTitle">
+        <h2 id="previewTitle" class="panel-title">Live Preview</h2>
+        <p class="panel-sub">This is how your ID card will look.</p>
+        <div id="cardStage"></div>
+        <p class="preview-note">Final cards are printed and issued by the club.</p>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-foot">© Techtonics Club · Iqra University</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
