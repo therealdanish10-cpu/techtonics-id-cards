@@ -204,19 +204,24 @@ Upload the whole folder, including `assets/`, to any static host: Netlify, Verce
 
 ## How it works
 
-- **Live card preview**: the card is one component (`TechCard` in `script.js`) with a fixed design size of 324 × 516 px (54:86). It's scaled with a CSS transform to fit the screen, so the text wraps the same way on every device.
-- **Identical exports**: the admin page renders the **same component** off-screen and captures it with `html2canvas` at **3× scale** (972 × 1548 px). Before capture, each photo is cropped to the frame's exact aspect ratio, so the PNG matches the on-screen `object-fit: cover`.
+- **Live card preview (Front & Back)**: both sides of the card are built by `TechCard` in `script.js` (`TechCard.create()` and `TechCard.createBack()`) at a fixed design size of 324 × 516 px (54:86). They are scaled with a CSS transform to fit the screen and include a smooth **Front / Back** toggle above the preview on both the member page and the admin preview modal.
+- **Static back side**: the back card features a top Techtonics green accent line, the centered Techtonics Club logo, the small-caps tagline *"Innovate. Collaborate. Create."*, a contact badge with an inline SVG phone icon (`Contact: +92 303 2888452`), a CSS-drawn signature line (*Authorized Signatory — President, Techtonics Club*), a property return notice, and the footer band (*Techtonics Club | Iqra University*).
+- **Identical exports**: the admin page renders the **same components** off-screen and captures them with `html2canvas` at **3× scale** (972 × 1548 px). Before capture, each member photo is cropped to the frame's exact aspect ratio so the front PNG matches the on-screen `object-fit: cover`, and the static back PNG is rendered with the same `TechCard.createBack()` element.
 - **Photos**: images are validated (image type, under 3 MB) and then resized in the browser to a maximum of 800 px (JPEG) before upload.
 - **Duplicate protection**: after a successful submission, a `localStorage` flag locks the form in that browser. This is only a light deterrent, so the club still reviews every submission and can delete duplicates in the dashboard.
-- **No member downloads**: `index.html` loads no export libraries and has no download, export or save code. Right-click and drag are disabled on the preview card, and the preview images ignore pointer events. No website can stop someone from taking a screenshot, though.
+- **No member downloads**: `index.html` loads no export libraries and has no download, export or save code. Right-click and drag are disabled on the preview cards, and the preview images ignore pointer events. No website can stop someone from taking a screenshot, though.
 
 ## Admin dashboard
 
 - Sign in with the admin email and password (Supabase Auth).
 - Search by name, department, batch or designation, and filter by designation.
-- Each row has **Preview Card**, **Edit** (fix typos or the designation), **Delete** (removes the row and the photo) and **Download PNG**.
+- Each row has:
+  - **Preview Card**: opens a modal with a **Front / Back** toggle.
+  - **Edit**: fix typos or update the designation.
+  - **Delete**: removes the submission row and its photo from storage.
+  - **Download PNG**: exports two 3× PNGs for that member (`[name]-front.png` and `[name]-back.png`).
 - Bulk actions:
-  - **Download all cards as ZIP**: one PNG per member, named after the member (`muhammad-ali-khan.png`). If a search or filter is active, only the visible cards are exported.
+  - **Download all cards as ZIP**: includes both `[name]-front.png` and `[name]-back.png` (at 3× scale) for every member. If a search or filter is active, only the visible members' cards are exported.
   - **Export data as CSV**: UTF-8 with BOM, so it opens correctly in Excel.
 
 ## Troubleshooting

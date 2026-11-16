@@ -115,6 +115,12 @@
       <aside class="panel preview-panel" aria-labelledby="previewTitle">
         <h2 id="previewTitle" class="panel-title">Live Preview</h2>
         <p class="panel-sub">This is how your ID card will look.</p>
+        <div class="card-toggle-wrap">
+          <div class="card-toggle" aria-label="Card side preview">
+            <button type="button" class="card-toggle-btn is-active" data-side="front" aria-pressed="true">Front</button>
+            <button type="button" class="card-toggle-btn" data-side="back" aria-pressed="false">Back</button>
+          </div>
+        </div>
         <div id="cardStage"></div>
         <p class="preview-note">Final cards are printed and issued by the club.</p>
       </aside>

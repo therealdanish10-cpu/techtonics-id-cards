@@ -295,11 +295,15 @@
   });
 
   /* ---------- Preview ---------- */
-  const previewCard = TechCard.mount($("previewStage"));
+  const previewStage = $("previewStage");
+  const previewToggle = $("previewToggle");
+  const previewCard = TechCard.mount(previewStage);
+  TechCard.bindToggle(previewToggle, previewStage);
   let previewRow = null;
   function openPreview(r) {
     previewRow = r;
     $("previewModalTitle").textContent = r.full_name;
+    TechCard.setSide(previewStage, "front", previewToggle);
     openModal("previewModal");
     TechCard.update(previewCard, { ...r, photo_src: photoSrc(r) });
   }
@@ -457,7 +461,7 @@
     ));
   }
 
-  /** Render one card to a canvas at 3x using the shared TechCard component. */
+  /** Render one front card to a canvas at 3x using the shared TechCard component. */
   async function renderCardCanvas(row) {
     if (typeof html2canvas !== "function") throw new Error("Export library (html2canvas) failed to load.");
     const host = $("exportHost");
@@ -485,6 +489,34 @@
     return canvas;
   }
 
+  let cachedBackBlob = null;
+  /** Render the static back card to a PNG blob at 3x (cached after first render). */
+  async function getBackBlob() {
+    if (cachedBackBlob) return cachedBackBlob;
+    if (typeof html2canvas !== "function") throw new Error("Export library (html2canvas) failed to load.");
+    const host = $("exportHost");
+    host.innerHTML = "";
+    const card = TechCard.createBack();
+    host.appendChild(card);
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    await waitForImages(card);
+    const canvas = await html2canvas(card, {
+      scale: EXPORT_SCALE,
+      backgroundColor: null,
+      useCORS: true,
+      logging: false,
+      width: TechCard.WIDTH,
+      height: TechCard.HEIGHT,
+      onclone: (doc) => {
+        const h = doc.getElementById("exportHost");
+        if (h) h.style.opacity = "1";
+      }
+    });
+    host.innerHTML = "";
+    cachedBackBlob = await canvasToBlob(canvas);
+    return cachedBackBlob;
+  }
+
   function canvasToBlob(canvas) {
     return new Promise((resolve, reject) =>
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG encoding failed. If you opened the file directly (file://), serve the site over http instead."))), "image/png")
@@ -509,10 +541,14 @@
     busy = true;
     setBtnLoading(btn, true, "Rendering…");
     try {
-      const canvas = await renderCardCanvas(row);
-      const blob = await canvasToBlob(canvas);
-      saveBlob(blob, slug(row.full_name) + "-id-card.png");
-      toast("Downloaded card for " + row.full_name + ".");
+      const base = slug(row.full_name);
+      const frontCanvas = await renderCardCanvas(row);
+      const frontBlob = await canvasToBlob(frontCanvas);
+      const backBlob = await getBackBlob();
+      saveBlob(frontBlob, base + "-front.png");
+      await new Promise((r) => setTimeout(r, 180));
+      saveBlob(backBlob, base + "-back.png");
+      toast("Downloaded front and back cards for " + row.full_name + ".");
     } catch (e) {
       toast("Download failed: " + friendlyError(e), true);
     } finally {
@@ -534,17 +570,19 @@
     const used = new Map();
     const failed = [];
     try {
+      const backBlob = await getBackBlob();
       for (let i = 0; i < list.length; i++) {
         const r = list[i];
         setProgress(i, list.length, "Rendering " + r.full_name + "…");
         try {
           const canvas = await renderCardCanvas(r);
-          const blob = await canvasToBlob(canvas);
+          const frontBlob = await canvasToBlob(canvas);
           let base = slug(r.full_name);
           const n = (used.get(base) || 0) + 1;
           used.set(base, n);
           if (n > 1) base += "-" + n;
-          zip.file(base + ".png", blob);
+          zip.file(base + "-front.png", frontBlob);
+          zip.file(base + "-back.png", backBlob);
         } catch (e) {
           failed.push(r.full_name + " (" + friendlyError(e) + ")");
         }
@@ -555,7 +593,7 @@
       saveBlob(out, "techtonics-id-cards-" + new Date().toISOString().slice(0, 10) + ".zip");
       toast(failed.length
         ? "ZIP downloaded, but " + failed.length + " card(s) failed: " + failed.join("; ")
-        : "Downloaded " + list.length + " card" + (list.length === 1 ? "" : "s") + " as ZIP.", failed.length > 0);
+        : "Downloaded front & back cards for " + list.length + " member" + (list.length === 1 ? "" : "s") + " as ZIP.", failed.length > 0);
     } catch (e) {
       toast("ZIP export failed: " + friendlyError(e), true);
     } finally {

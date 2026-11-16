@@ -113,6 +113,61 @@
       return card;
     },
 
+    /** Build a fresh back-side card DOM node (fixed 324×516 design size, static). */
+    createBack() {
+      const card = el("div", "tc-card tc-card-back");
+      card.setAttribute("aria-label", "Member ID card back preview");
+
+      const topLine = el("div", "tc-back-top-line");
+
+      const body = el("div", "tc-back-body");
+
+      // Center-top: Techtonics Club logo + tagline
+      const brand = el("div", "tc-back-brand");
+      const logo = el("img", "tc-back-logo");
+      logo.src = "assets/techtonics-logo.jpeg";
+      logo.alt = "Techtonics Club";
+      logo.draggable = false;
+      const tagline = el("p", "tc-back-tagline", "Innovate. Collaborate. Create.");
+      brand.append(logo, tagline);
+
+      // Middle: contact block with inline SVG phone icon
+      const contact = el("div", "tc-back-contact");
+      contact.innerHTML =
+        '<svg class="tc-back-phone-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2b7a05" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>' +
+        "</svg>" +
+        "<span>Contact: +92 303 2888452</span>";
+
+      const divider = el("div", "tc-back-divider");
+
+      // CSS-only signature line + labels
+      const sig = el("div", "tc-back-sig");
+      sig.append(
+        el("div", "tc-back-sig-line"),
+        el("span", "tc-back-sig-title", "Authorized Signatory"),
+        el("span", "tc-back-sig-sub", "President, Techtonics Club")
+      );
+
+      // Return notice
+      const notice = el(
+        "p",
+        "tc-back-notice",
+        "This card is the property of Techtonics Club, Iqra University. If found, please return to the club."
+      );
+
+      body.append(brand, contact, divider, sig, notice);
+
+      // Footer band
+      const footer = el("div", "tc-footer");
+      footer.append(el("span", null, "Techtonics Club"), el("span", "sep", "|"), el("span", null, "Iqra University"));
+
+      card.append(topLine, body, footer);
+      card.addEventListener("contextmenu", (e) => e.preventDefault());
+      card.addEventListener("dragstart", (e) => e.preventDefault());
+      return card;
+    },
+
     /** Update card text + photo. `data` uses the database column names. */
     update(card, data) {
       data = data || {};
@@ -161,16 +216,30 @@
     },
 
     /**
-     * Mount a card into a responsive "stage" that scales the fixed-size
-     * card to the available width (so layout is pixel-identical everywhere).
+     * Mount a card (front + back) into a responsive "stage" that scales the
+     * fixed-size card to the available width (so layout is pixel-identical everywhere).
      */
     mount(stage) {
       stage.innerHTML = "";
       stage.classList.add("card-stage");
       const scaler = el("div", "card-scale");
+      const frontWrap = el("div", "card-face card-face-front");
+      const backWrap = el("div", "card-face card-face-back is-hidden");
+      backWrap.setAttribute("aria-hidden", "true");
       const card = TechCard.create();
-      scaler.appendChild(card);
+      const backCard = TechCard.createBack();
+      frontWrap.appendChild(card);
+      backWrap.appendChild(backCard);
+      scaler.append(frontWrap, backWrap);
       stage.appendChild(scaler);
+
+      stage._setSide = (side) => {
+        const showBack = side === "back";
+        frontWrap.classList.toggle("is-hidden", showBack);
+        frontWrap.setAttribute("aria-hidden", showBack ? "true" : "false");
+        backWrap.classList.toggle("is-hidden", !showBack);
+        backWrap.setAttribute("aria-hidden", showBack ? "false" : "true");
+      };
 
       const resize = () => {
         const w = stage.clientWidth || CARD_W;
@@ -185,6 +254,28 @@
       // Re-fit once web fonts are ready (metrics change)
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => TechCard.fit(card));
       return card;
+    },
+
+    /** Switch the visible side ("front" or "back") on a mounted stage and optional toggle container. */
+    setSide(stage, side, toggleRoot) {
+      if (stage && stage._setSide) stage._setSide(side);
+      if (toggleRoot) {
+        toggleRoot.querySelectorAll("[data-side]").forEach((btn) => {
+          const active = btn.dataset.side === side;
+          btn.classList.toggle("is-active", active);
+          btn.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+      }
+    },
+
+    /** Wire a Front/Back toggle container to a mounted stage. */
+    bindToggle(toggleRoot, stage) {
+      if (!toggleRoot || !stage) return;
+      toggleRoot.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-side]");
+        if (!btn) return;
+        TechCard.setSide(stage, btn.dataset.side, toggleRoot);
+      });
     }
   };
 
@@ -255,7 +346,10 @@
     DESIGNATIONS.forEach((d) => designation.appendChild(new Option(d, d)));
     designation.appendChild(new Option("Custom…", "__custom"));
 
-    const card = TechCard.mount($("cardStage"));
+    const stageEl = $("cardStage");
+    const card = TechCard.mount(stageEl);
+    const toggleEl = document.querySelector(".preview-panel .card-toggle");
+    TechCard.bindToggle(toggleEl, stageEl);
 
     let photoBlob = null;     // compressed JPEG to upload
     let photoPreview = null;  // object URL for preview
